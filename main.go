@@ -18,8 +18,8 @@ const (
 )
 
 func Command(cmd string) bool {
-	c := exec.Command("cmd", "/C", cmd) // windows
-	//c := exec.Command(ctx, "bash", "-c", cmd) // mac linux
+	//c := exec.Command("cmd", "/C", cmd) // windows
+	c := exec.Command("bash", "-c", cmd) // mac linux
 	stdout, err := c.StdoutPipe()
 	if err != nil {
 		return false
@@ -37,6 +37,8 @@ func Command(cmd string) bool {
 	err = c.Start()
 	// 等待任务结束
 	wg.Wait()
+	c.Wait()
+	return c.ProcessState.Success()
 }
 
 func read(wg *sync.WaitGroup, std io.ReadCloser) {
@@ -69,8 +71,30 @@ func ConvertByte2String(byte []byte, charset Charset) string {
 func main() {
 	input := bufio.NewScanner(os.Stdin)
 	fmt.Println("*********************************************** power by AIIS ********************************************************")
-	fmt.Println("*********************************************** start git batch opt... ***********************************************")
-	fmt.Println("input y to continue:")
+	fmt.Println("       ┌─┐       ┌─┐ + +")
+	fmt.Println("    ┌──┘ ┴───────┘ ┴──┐++")
+	fmt.Println("    │                 │")
+	fmt.Println("    │       ───       │++ + + +")
+	fmt.Println("    ███████───███████ │+")
+	fmt.Println("    │                 │+")
+	fmt.Println("    │       ─┴─       │")
+	fmt.Println("    │                 │")
+	fmt.Println("    └───┐         ┌───┘")
+	fmt.Println("        │         │")
+	fmt.Println("        │         │   + +")
+	fmt.Println("        │         │")
+	fmt.Println("        │         └──────────────┐")
+	fmt.Println("        │                        │")
+	fmt.Println("        │                        ├─┐")
+	fmt.Println("        │                        ┌─┘")
+	fmt.Println("        │                        │")
+	fmt.Println("        └─┐  ┐  ┌───────┬──┐  ┌──┘  + + + +")
+	fmt.Println("          │ ─┤ ─┤       │ ─┤ ─┤")
+	fmt.Println("          └──┴──┘       └──┴──┘  + + + +")
+	fmt.Println("                 神兽保佑")
+	fmt.Println("                代码无BUG!")
+	fmt.Println("pre execute list:")
+	fmt.Println("y to continue:")
 	for input.Scan() {
 		line := input.Text()
 		if line == "q" {
@@ -81,4 +105,10 @@ func main() {
 		}
 		fmt.Println("execute error, please check pre execute list")
 	}
+}
+
+func printPreExecuteList() {
+	fmt.Println("0. 创建gitlab api token")
+	fmt.Println("1. 确保当前分支有push权限")
+	fmt.Println("1. 设置api token --> sa")
 }
