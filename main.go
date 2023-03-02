@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 )
 
@@ -19,6 +20,7 @@ const (
 	CICCWM  = "CICCWM"
 )
 
+// Command 执行命令, 输出到控制台
 func Command(cmd string) bool {
 	c := exec.Command("cmd", "/C", cmd) // windows
 	//c := exec.Command("bash", "-c", cmd) // mac linux
@@ -41,6 +43,18 @@ func Command(cmd string) bool {
 	wg.Wait()
 	c.Wait()
 	return c.ProcessState.Success()
+}
+
+// CommandWithResult 执行命令, 获取输出结果
+func CommandWithResult(cmd string) string {
+	c := exec.Command("cmd", "/C", cmd) // windows
+	//c := exec.Command("bash", "-c", cmd) // mac linux
+	stdout, err := c.CombinedOutput()
+	if err != nil {
+		return ""
+	}
+	c.Run()
+	return string(stdout)
 }
 
 func read(wg *sync.WaitGroup, std io.ReadCloser) {
@@ -105,6 +119,17 @@ func main() {
 			v["cmd"] = line
 		}
 		switch v["cmd"] {
+		case "sca":
+			{
+				fmt.Println("暂不支持设置api token至CICC仓库, 请设置为ssh url")
+				//setApiToken(CICC, line, v)
+				continue
+			}
+		case "swa":
+			{
+				setApiToken(CICCWM, line, v)
+				continue
+			}
 		case "sr":
 			{
 				showRepository(v)
@@ -160,29 +185,31 @@ func main() {
 }
 
 func printPreExecuteList(v map[string]string) {
-	fmt.Println("0. 确认创建gitlab api token")
-	fmt.Println("1. 确认设置cicc/ciccwm仓库地址")
+	fmt.Println("0. 确认仓库账户创建凭证, ssh -> public key, http/https -> api token")
+	fmt.Println("1. 确认设置仓库地址")
 	fmt.Println("1. 确认当前分支可以push且远程仓库有push权限")
-	fmt.Println("2. 确认设置仓库认证（cicc支持ssh/apitoken方式，ciccwm支持apitoken方式）")
+	fmt.Println("2. 确认设置仓库认证(ssh/token方式)")
 	fmt.Println("3. 推送代码")
 	v["cmd"] = ""
 }
 
 func printHelp(v map[string]string) {
 	fmt.Println("h  --> help")
-	fmt.Println("sa --> set ciccwm api token")
+	fmt.Println("swa--> set ciccwm api token")
+	fmt.Println("sca--> set cicc api token")
 	fmt.Println("sb --> show current branch")
 	fmt.Println("scr--> set cicc repository")
 	fmt.Println("swr--> set ciccwm repository")
 	fmt.Println("sr --> show current repository")
 	fmt.Println("pp --> show pre execute check list")
-	fmt.Println("pu --> push cicc/ciccwm, execute git fetch --all first")
+	fmt.Println("pu --> push cicc and ciccwm repo, execute git fetch first")
 	fmt.Println("q  --> quit")
 	v["cmd"] = ""
 }
 
 func showRepository(v map[string]string) bool {
 	res := Command("git remote -v")
+	fmt.Println(v["cmd"] + " complete!")
 	v["cmd"] = ""
 	return res
 }
@@ -193,6 +220,8 @@ func setRepository(s string, url string, v map[string]string) bool {
 		return true
 	}
 	if url == "q" {
+		fmt.Println(v["cmd"] + " complete!")
+		v["cmd"] = ""
 		return true
 	}
 	Command("git remote remove " + s)
@@ -203,17 +232,45 @@ func setRepository(s string, url string, v map[string]string) bool {
 
 func showBranch(v map[string]string) bool {
 	res := Command("git branch -vv")
+	fmt.Println(v["cmd"] + " complete!")
 	v["cmd"] = ""
 	return res
 }
 
-func setApiToken(token string, v map[string]string) bool {
-	return false
+func setApiToken(s string, token string, v map[string]string) bool {
+	if token == "swa" || token == "sca" || token == "" {
+		fmt.Println("请确保git remote url已设置为http/https类型")
+		fmt.Println("please input api token, q to back:")
+		return true
+	}
+	if token == "q" {
+		fmt.Println(v["cmd"] + " complete!")
+		v["cmd"] = ""
+		return true
+	}
+	url := CommandWithResult("git remote get-url " + s)
+	_, tokenUrl, found := strings.Cut(url, "http://")
+	fmt.Println("get tokenUrl:" + tokenUrl)
+	if !found {
+		_, tokenUrl, found := strings.Cut(url, "https://")
+		if !found {
+			fmt.Println("set api token failed")
+			return false
+		}
+		fmt.Println(v["cmd"] + " complete!")
+		v["cmd"] = ""
+		return Command("git remote set-url " + s + " https://oauth2:" + token + "@" + tokenUrl)
+	}
+	fmt.Println(v["cmd"] + " complete!")
+	v["cmd"] = ""
+	return Command("git remote set-url " + s + " http://oauth2:" + token + "@" + tokenUrl)
 }
 
 func push(v map[string]string) bool {
-	Command("git fetch --all")
-	res := Command("git push cicc") && Command("git push ciccwm")
+	Command("git fetch " + CICC)
+	Command("git fetch " + CICCWM)
+	res := Command("git push "+CICC) && Command("git push "+CICCWM)
+	fmt.Println(v["cmd"] + " complete!")
 	v["cmd"] = ""
 	return res
 }
