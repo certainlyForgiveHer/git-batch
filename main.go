@@ -226,6 +226,7 @@ func setRepository(s string, url string, v map[string]string) bool {
 	}
 	Command("git remote remove " + s)
 	res := Command("git remote add " + s + " " + url)
+	fmt.Println(v["cmd"] + " complete!")
 	v["cmd"] = ""
 	return res
 }
