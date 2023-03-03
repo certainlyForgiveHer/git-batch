@@ -121,8 +121,7 @@ func main() {
 		switch v["cmd"] {
 		case "sca":
 			{
-				fmt.Println("暂不支持设置api token至CICC仓库, 请设置为ssh url")
-				//setApiToken(CICC, line, v)
+				setApiToken(CICC, line, v)
 				continue
 			}
 		case "swa":
